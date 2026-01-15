@@ -40,7 +40,7 @@ body {
 }
 
 .logo {
-    width: 100%;
+    width: 30%;
     height: auto;
     display: block;
     margin: 0 auto;
@@ -48,6 +48,167 @@ body {
 
 .main-content {
     width: 100%;
+}
+
+/* Stepper Styles */
+.stepper-container {
+    margin-bottom: 40px;
+    padding: 20px 0;
+}
+
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.stepper-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    position: relative;
+}
+
+.stepper-step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-gray);
+    transition: var(--transition);
+    position: relative;
+    z-index: 2;
+}
+
+.stepper-step.active .stepper-step-number {
+    background-color: var(--primary-black);
+    border-color: var(--primary-black);
+    color: var(--bg-light);
+}
+
+.stepper-step.completed .stepper-step-number {
+    background-color: var(--primary-black);
+    border-color: var(--primary-black);
+    color: transparent;
+}
+
+.stepper-step.completed .stepper-step-number::after {
+    content: '✓';
+    position: absolute;
+    color: var(--bg-light);
+    font-size: 18px;
+    font-weight: 700;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.stepper-step-label {
+    font-size: 12px;
+    color: var(--text-gray);
+    text-align: center;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.stepper-step.active .stepper-step-label {
+    color: var(--primary-black);
+    font-weight: 600;
+}
+
+.stepper-line {
+    flex: 1;
+    height: 2px;
+    background-color: var(--border-gray);
+    margin: 0 8px;
+    transition: var(--transition);
+}
+
+.stepper-line.completed {
+    background-color: var(--primary-black);
+}
+
+/* Form Step Styles */
+.form-step {
+    display: none;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.form-step.active {
+    display: block;
+}
+
+/* Step Actions */
+.step-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-gray);
+}
+
+.step-next-btn,
+.step-prev-btn {
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
+}
+
+.step-next-btn {
+    color: var(--bg-light);
+    background-color: var(--primary-black);
+    margin-left: auto;
+}
+
+.step-next-btn:hover {
+    background-color: var(--text-black);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.step-next-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.step-next-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.step-prev-btn {
+    color: var(--primary-black);
+    background-color: transparent;
+    border: 2px solid var(--border-gray);
+}
+
+.step-prev-btn:hover {
+    background-color: var(--bg-section);
+    border-color: var(--primary-black);
+}
+
+.step-prev-btn:active {
+    transform: scale(0.98);
 }
 
 .title {
@@ -163,6 +324,7 @@ body {
     border-radius: 12px;
     padding: 28px;
     border: 1px solid var(--border-gray);
+    margin-top: 24px;
 }
 
 .clarifications-title {
@@ -331,6 +493,72 @@ body {
 
 .form-input::placeholder {
     color: #9ca3af;
+}
+
+/* Tier 3 Contribution Section */
+.tier3-contribution-section {
+    margin-top: 24px;
+    padding: 24px;
+    background-color: var(--bg-section);
+    border-radius: 12px;
+    border: 1px solid var(--border-gray);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.contribution-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.contribution-prefix {
+    position: absolute;
+    left: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-black);
+    z-index: 1;
+}
+
+.contribution-input {
+    padding-left: 32px !important;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.field-hint {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-top: 6px;
+    font-style: italic;
+}
+
+.tier-note {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin: 4px 0 0 0;
+    font-style: italic;
+}
+
+/* Mobile Responsive for Tier 3 Contribution */
+@media (max-width: 768px) {
+    .tier3-contribution-section {
+        padding: 20px;
+    }
+    
+    .contribution-prefix {
+        left: 14px;
+        font-size: 14px;
+    }
+    
+    .contribution-input {
+        padding-left: 28px !important;
+        font-size: 15px;
+    }
+    
+    .field-hint {
+        font-size: 12px;
+    }
 }
 
 .error-message {
@@ -564,9 +792,43 @@ body {
         padding: 16px;
     }
     
+    .logo {
+        width: 50%;
+    }
+    
     .header {
         margin-bottom: 32px;
         padding-top: 10px;
+    }
+    
+    .stepper-container {
+        margin-bottom: 32px;
+        padding: 16px 0;
+    }
+    
+    .stepper-step-number {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .stepper-step-label {
+        font-size: 11px;
+    }
+    
+    .stepper-line {
+        margin: 0 4px;
+    }
+    
+    .step-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .step-next-btn,
+    .step-prev-btn {
+        width: 100%;
+        margin-left: 0;
     }
     
     .title {
@@ -732,6 +994,13 @@ body {
     align-items: center;
     justify-content: center;
     animation: fadeIn 0.3s ease-out;
+}
+
+.success-modal.show,
+.success-modal[style*="display: block"],
+.success-modal[style*="display:flex"],
+.success-modal[style*="display: flex"] {
+    display: flex !important;
 }
 
 .success-modal-overlay {
@@ -1050,5 +1319,221 @@ body {
     
     .confirmation-checkbox-text {
         font-size: 13px;
+    }
+}
+
+/* Additional Attendees Section */
+.additional-attendee-section {
+    margin-top: 32px;
+    padding: 28px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.additional-attendee-header {
+    margin-bottom: 24px;
+}
+
+.additional-attendee-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin: 0 0 8px 0;
+    letter-spacing: -0.3px;
+}
+
+.additional-attendee-description {
+    font-size: 14px;
+    color: var(--text-gray);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.additional-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    background-color: #fef3c7;
+    color: #92400e;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attendee-row.additional-attendee {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.attendee-row.additional-attendee .attendee-number {
+    color: #92400e;
+    font-weight: 700;
+}
+
+/* Cost Summary */
+.cost-summary {
+    margin-top: 24px;
+    padding: 20px;
+    background-color: var(--bg-light);
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+}
+
+.cost-summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cost-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.cost-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-black);
+}
+
+.cost-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #92400e;
+}
+
+/* Mobile Responsive for Additional Attendees */
+@media (max-width: 768px) {
+    .additional-attendee-section {
+        padding: 20px;
+        margin-top: 24px;
+    }
+    
+    .additional-attendee-title {
+        font-size: 16px;
+    }
+    
+    .additional-attendee-description {
+        font-size: 13px;
+    }
+    
+    .cost-summary {
+        padding: 16px;
+    }
+    
+    .cost-label {
+        font-size: 14px;
+    }
+    
+    .cost-value {
+        font-size: 16px;
+    }
+    
+    .additional-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+/* Footer Styles */
+.footer {
+    margin-top: 60px;
+    padding: 32px 20px;
+    border-top: 1px solid var(--border-gray);
+    background-color: var(--bg-light);
+}
+
+.footer-content {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.footer-text {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-logo {
+    height: 40px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+    opacity: 0.8;
+    transition: var(--transition);
+}
+
+.footer-logo:hover {
+    opacity: 1;
+}
+
+.footer-company {
+    font-size: 14px;
+    color: var(--text-black);
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Mobile Responsive for Footer */
+@media (max-width: 768px) {
+    .footer {
+        margin-top: 40px;
+        padding: 24px 16px;
+    }
+    
+    .footer-content {
+        gap: 10px;
+    }
+    
+    .footer-text {
+        font-size: 12px;
+    }
+    
+    .footer-logo {
+        height: 32px;
+        max-width: 150px;
+    }
+    
+    .footer-company {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        margin-top: 32px;
+        padding: 20px 12px;
+    }
+    
+    .footer-logo {
+        height: 28px;
+        max-width: 120px;
+    }
+    
+    .footer-text {
+        font-size: 11px;
+    }
+    
+    .footer-company {
+        font-size: 12px;
     }
 }

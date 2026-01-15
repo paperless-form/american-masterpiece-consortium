@@ -1,586 +1,834 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('partnershipForm');
-    const acknowledgmentCheckbox = form.querySelector('input[name="acknowledgment"]');
-    const contactFieldsSection = document.getElementById('contactFields');
-    const attendeeSection = document.getElementById('attendeeSection');
-    const attendeeFieldsContainer = document.getElementById('attendeeFields');
-    const tierError = document.getElementById('tierError');
-    const tierRadios = form.querySelectorAll('input[name="tier"]');
+$(document).ready(function() {
+    var d = new Date();
+    var today = addZero(d.getDate()) + '/' + addZero(d.getMonth() + 1) + '/' + d.getFullYear()
+     $('.today').val(today)
     
-    let attendeeCounter = 1;
-    let maxAttendees = 3;
-    let complimentaryAttendees = 3; // Number of complimentary attendees
-    let additionalAttendeesAllowed = 3; // Number of additional paid attendees allowed
-    let hasConfirmedAdditionalAttendees = false; // Track if user confirmed additional attendees
-    
-    // Function to show error message
-    function showError(errorId, message) {
-        const errorElement = document.getElementById(errorId);
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-    }
-    
-    // Function to hide error message
-    function hideError(errorId) {
-        const errorElement = document.getElementById(errorId);
-        if (errorElement) {
-            errorElement.textContent = '';
-            errorElement.style.display = 'none';
-        }
-    }
-    
-    // Function to clear all errors
-    function clearAllErrors() {
-        const errorElements = document.querySelectorAll('.error-message');
-        errorElements.forEach(error => {
-            error.textContent = '';
-            error.style.display = 'none';
-        });
-        
-        // Clear input error states
-        const inputs = document.querySelectorAll('.form-input, .attendee-input');
-        inputs.forEach(input => {
-            input.classList.remove('error');
-        });
-    }
-    
-    // Function to set input error state
-    function setInputError(input, hasError) {
-        if (hasError) {
-            input.classList.add('error');
-        } else {
-            input.classList.remove('error');
-        }
-    }
-    
-    // Function to create a single attendee row
-    function createAttendeeRow(index) {
-        const attendeeRow = document.createElement('div');
-        attendeeRow.className = 'attendee-row';
-        attendeeRow.setAttribute('data-attendee-index', index);
-        attendeeRow.innerHTML = `
-            <div class="attendee-input-group">
-                <label class="attendee-input-label" for="attendeeName${index}">Name</label>
-                <input type="text" id="attendeeName${index}" name="attendeeName${index}" class="attendee-input required" placeholder="Enter attendee name">
-                <span class="error-message" id="attendeeName${index}Error"></span>
-            </div>
-            <div class="attendee-input-group">
-                <label class="attendee-input-label" for="attendeeTitle${index}">Title/Position</label>
-                <input type="text" id="attendeeTitle${index}" name="attendeeTitle${index}" class="attendee-input required" placeholder="Enter title/position">
-                <span class="error-message" id="attendeeTitle${index}Error"></span>
-            </div>
-            <div class="attendee-actions">
-                <button type="button" class="attendee-delete-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-        `;
-        
-        // Add delete button event listener
-        const deleteBtn = attendeeRow.querySelector('.attendee-delete-btn');
-        deleteBtn.addEventListener('click', function() {
-            deleteAttendee(index);
-        });
-        
-        // Add input event listeners to clear errors on input
-        const nameInput = attendeeRow.querySelector(`#attendeeName${index}`);
-        const titleInput = attendeeRow.querySelector(`#attendeeTitle${index}`);
-        
-        if (nameInput) {
-            nameInput.addEventListener('input', function() {
-                hideError(`attendeeName${index}Error`);
-                setInputError(this, false);
-            });
-        }
-        
-        if (titleInput) {
-            titleInput.addEventListener('input', function() {
-                hideError(`attendeeTitle${index}Error`);
-                setInputError(this, false);
-            });
-        }
-        
-        return attendeeRow;
-    }
-    
-    // Function to get current attendee count
-    function getAttendeeCount() {
-        return attendeeFieldsContainer.querySelectorAll('.attendee-row').length;
-    }
-    
-    // Function to check if we should show additional attendees confirmation
-    function checkAndShowAdditionalAttendeesConfirmation() {
-        const currentCount = getAttendeeCount();
-        const selectedTier = form.querySelector('input[name="tier"]:checked');
-        
-        if (!selectedTier || hasConfirmedAdditionalAttendees) {
-            return;
-        }
-        
-        // Check if user has reached complimentary limit
-        if (currentCount === complimentaryAttendees) {
-            showAdditionalAttendeesConfirmation(selectedTier.value);
-        } else {
-            hideAdditionalAttendeesConfirmation();
-        }
-    }
-    
-    // Function to show additional attendees confirmation UI
-    function showAdditionalAttendeesConfirmation(tierValue) {
-        // Remove existing confirmation if any
-        hideAdditionalAttendeesConfirmation();
-        
-        const additionalCount = tierValue === 'tier1' ? 3 : 2;
-        const confirmationCard = document.createElement('div');
-        confirmationCard.className = 'additional-attendees-confirmation';
-        confirmationCard.id = 'additionalAttendeesConfirmation';
-        confirmationCard.innerHTML = `
-            <div class="confirmation-content">
-                <div class="confirmation-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
-                    </svg>
-                </div>
-                <div class="confirmation-text">
-                    <p class="confirmation-title">You've reached your complimentary attendees limit!</p>
-                    <p class="confirmation-message">You can add up to ${additionalCount} more attendee${additionalCount > 1 ? 's' : ''} at $300 each.</p>
-                </div>
-                <label class="confirmation-checkbox-label">
-                    <input type="checkbox" id="confirmAdditionalAttendees" class="confirmation-checkbox">
-                    <span class="confirmation-checkbox-text">Yes, I'd like to add additional attendees</span>
-                </label>
-            </div>
-        `;
-        
-        // Insert before add button container
-        const addButtonContainer = attendeeFieldsContainer.querySelector('.add-attendee-container');
-        if (addButtonContainer) {
-            attendeeFieldsContainer.insertBefore(confirmationCard, addButtonContainer);
-        } else {
-            attendeeFieldsContainer.appendChild(confirmationCard);
-        }
-        
-        // Add event listener to checkbox
-        const checkbox = confirmationCard.querySelector('#confirmAdditionalAttendees');
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                hasConfirmedAdditionalAttendees = true;
-                maxAttendees = complimentaryAttendees + additionalAttendeesAllowed;
-                updateAddButtonVisibility();
-                confirmationCard.classList.add('confirmed');
-            } else {
-                hasConfirmedAdditionalAttendees = false;
-                maxAttendees = complimentaryAttendees;
-                // Remove any attendees beyond complimentary limit
-                removeExcessAttendees();
-                updateAddButtonVisibility();
-                confirmationCard.classList.remove('confirmed');
-            }
-        });
-    }
-    
-    // Function to hide additional attendees confirmation
-    function hideAdditionalAttendeesConfirmation() {
-        const confirmation = document.getElementById('additionalAttendeesConfirmation');
-        if (confirmation) {
-            confirmation.remove();
-        }
-    }
-    
-    // Function to remove attendees beyond complimentary limit
-    function removeExcessAttendees() {
-        const rows = attendeeFieldsContainer.querySelectorAll('.attendee-row');
-        const rowsArray = Array.from(rows);
-        
-        // Remove attendees beyond complimentary limit
-        rowsArray.slice(complimentaryAttendees).forEach(row => {
-            row.remove();
-        });
-        
-        // Reset counter if needed
-        const remainingCount = getAttendeeCount();
-        if (remainingCount < attendeeCounter) {
-            attendeeCounter = remainingCount;
-        }
-        
-        updateDeleteButtonsVisibility();
-    }
-    
-    // Function to add a new attendee
-    function addAttendee() {
-        const currentCount = getAttendeeCount();
-        if (currentCount < maxAttendees) {
-            attendeeCounter++;
-            // Insert before the add button container
-            const addButtonContainer = attendeeFieldsContainer.querySelector('.add-attendee-container');
-            const newRow = createAttendeeRow(attendeeCounter);
-            if (addButtonContainer) {
-                attendeeFieldsContainer.insertBefore(newRow, addButtonContainer);
-            } else {
-                attendeeFieldsContainer.appendChild(newRow);
-            }
-            updateAddButtonVisibility();
-            updateDeleteButtonsVisibility();
+    var ref = addZero(d.getDate()) + '' + addZero(d.getMonth() + 1) + '' + d.getFullYear().toString().substr(-2) + '' + addZero(d.getHours()) + '' + addZero(d.getMinutes())
+    $('.order_ref').val(ref);
+
+    let currentStep = 1;
+    const totalSteps = 3;
+
+    // Initialize stepper
+    function updateStepper() {
+        $('.stepper-step').each(function() {
+            const stepNum = parseInt($(this).data('step'));
+            $(this).removeClass('active completed');
             
-            // Check if we need to show confirmation after adding
-            setTimeout(() => {
-                checkAndShowAdditionalAttendeesConfirmation();
-            }, 100);
-        }
+            if (stepNum < currentStep) {
+                $(this).addClass('completed');
+            } else if (stepNum === currentStep) {
+                $(this).addClass('active');
+            }
+        });
+        
+        // Update stepper lines
+        $('.stepper-line').each(function(index) {
+            if (index + 1 < currentStep) {
+                $(this).addClass('completed');
+            } else {
+                $(this).removeClass('completed');
+            }
+        });
     }
-    
-    // Function to delete an attendee
-    function deleteAttendee(index) {
-        const currentCount = getAttendeeCount();
-        if (currentCount > 1) {
-            const rowToDelete = attendeeFieldsContainer.querySelector(`[data-attendee-index="${index}"]`);
-            if (rowToDelete) {
-                rowToDelete.remove();
-                const newCount = getAttendeeCount();
+
+    // Show step
+    function showStep(step) {
+        $('.form-step').removeClass('active').hide();
+        $(`#step${step}`).addClass('active').show();
+        currentStep = step;
+        updateStepper();
+        
+        // Show add attendee button container for step 3
+        if (step === 3) {
+            $('#addAttendeeContainer').show();
+            updateAdditionalAttendeeSection();
+        } else {
+            $('#addAttendeeContainer').hide();
+            $('#additionalAttendeeSection').hide();
+        }
+        
+        // Smooth scroll to stepper container
+        $('html, body').animate({
+            scrollTop: $('.stepper-container').offset().top - 20
+        }, 600);
+    }
+
+    // Validate step 1
+    function validateStep1() {
+        const tierSelected = $('input[name="tier"]:checked').length > 0;
+        const acknowledgmentChecked = $('.acknowledgment-checkbox').is(':checked');
+        const selectedTier = $('input[name="tier"]:checked').val();
+        
+        // Clear previous errors
+        $('#tierError').hide();
+        $('#acknowledgmentError').text('').hide();
+        $('#contributionAmountError').text('').hide();
+        $('#contributionAmount').removeClass('error');
+        
+        let isValid = true;
+        let firstErrorElement = null;
+        
+        if (!tierSelected) {
+            $('#tierError').show();
+            if (!firstErrorElement) {
+                firstErrorElement = $('.form-section').first();
+            }
+            isValid = false;
+        }
+        
+        // Validate Tier 3 contribution amount
+        if (selectedTier === 'tier3') {
+            const contributionAmount = parseFloat($('#contributionAmount').val().replace(/[^0-9.]/g, '')) || 0;
+            if (!contributionAmount || contributionAmount < 300) {
+                $('#contributionAmount').addClass('error');
+                $('#contributionAmountError').text('Minimum contribution amount is $300.').show();
+                if (!firstErrorElement) {
+                    firstErrorElement = $('#tier3ContributionSection');
+                }
+                isValid = false;
+            }
+        }
+        
+        if (!acknowledgmentChecked) {
+            $('#acknowledgmentError').text('Please acknowledge the above distinctions.').show();
+            if (!firstErrorElement) {
+                firstErrorElement = $('.acknowledgment-section');
+            }
+            isValid = false;
+        }
+        
+        return { isValid: isValid, firstError: firstErrorElement };
+    }
+
+    // Next Step 1 Button
+    $('#nextStep1').on('click', function() {
+        const validation = validateStep1();
+        if (validation.isValid) {
+            showStep(2);
+        } else {
+            // Scroll to first error
+            if (validation.firstError && validation.firstError.length) {
+                $('html, body').animate({
+                    scrollTop: validation.firstError.offset().top - 100
+                }, 600);
+            } else {
+                $('html, body').animate({
+                    scrollTop: $('.stepper-container').offset().top - 20
+                }, 600);
+            }
+        }
+    });
+
+    // Previous Step 2 Button
+    $('#prevStep2').on('click', function() {
+        showStep(1);
+    });
+
+    // Next Step 2 Button
+    $('#nextStep2').on('click', function() {
+        // Basic validation for contact fields
+        let isValid = true;
+        let firstErrorField = null;
+        const requiredFields = ['institutionName', 'contactName', 'email', 'phone', 'street', 'city', 'state', 'zipCode'];
+        
+        requiredFields.forEach(function(fieldId) {
+            const field = $(`#${fieldId}`);
+            const errorElement = $(`#${fieldId}Error`);
+            
+            if (!field.val().trim()) {
+                field.addClass('error');
+                errorElement.text('This field is required.').show();
+                if (!firstErrorField) {
+                    firstErrorField = field;
+                }
+                isValid = false;
+            } else {
+                field.removeClass('error');
+                errorElement.hide();
                 
-                // If we go below complimentary limit, reset confirmation
-                if (newCount < complimentaryAttendees) {
-                    hasConfirmedAdditionalAttendees = false;
-                    maxAttendees = complimentaryAttendees;
-                    const confirmationCheckbox = document.getElementById('confirmAdditionalAttendees');
-                    if (confirmationCheckbox) {
-                        confirmationCheckbox.checked = false;
+                // Email validation
+                if (fieldId === 'email') {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(field.val().trim())) {
+                        field.addClass('error');
+                        errorElement.text('Please enter a valid email address.').show();
+                        if (!firstErrorField) {
+                            firstErrorField = field;
+                        }
+                        isValid = false;
                     }
                 }
                 
-                updateAddButtonVisibility();
-                updateDeleteButtonsVisibility();
-                
-                // Check if we need to show/hide confirmation after deleting
-                setTimeout(() => {
-                    checkAndShowAdditionalAttendeesConfirmation();
-                }, 100);
+                // Zip Code validation (basic - should be 5 digits or 5+4 format)
+                if (fieldId === 'zipCode') {
+                    const zipRegex = /^\d{5}(-\d{4})?$/;
+                    if (!zipRegex.test(field.val().trim())) {
+                        field.addClass('error');
+                        errorElement.text('Please enter a valid zip code (e.g., 12345 or 12345-6789).').show();
+                        if (!firstErrorField) {
+                            firstErrorField = field;
+                        }
+                        isValid = false;
+                    }
+                }
+            }
+        });
+        
+        if (isValid) {
+            showStep(3);
+            // Initialize attendee fields if not already done
+            initializeAttendeeFields();
+        } else {
+            // Scroll to first error field
+            if (firstErrorField && firstErrorField.length) {
+                $('html, body').animate({
+                    scrollTop: firstErrorField.offset().top - 100
+                }, 600);
+                // Focus on the field
+                setTimeout(function() {
+                    firstErrorField.focus();
+                }, 650);
+            } else {
+                $('html, body').animate({
+                    scrollTop: $('.stepper-container').offset().top - 20
+                }, 600);
             }
         }
-    }
-    
-    // Function to update add button visibility
-    function updateAddButtonVisibility() {
-        const addButton = document.getElementById('addAttendeeBtn');
-        if (addButton) {
-            const currentCount = getAttendeeCount();
-            addButton.style.display = currentCount < maxAttendees ? 'flex' : 'none';
+    });
+
+    // Previous Step 3 Button
+    $('#prevStep3').on('click', function() {
+        showStep(2);
+    });
+
+    // Real-time validation for step 1
+    $('input[name="tier"]').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#tierError').hide();
+            const selectedTier = $(this).val();
+            
+            // Show/hide Tier 3 contribution amount field
+            if (selectedTier === 'tier3') {
+                $('#tier3ContributionSection').slideDown(300);
+            } else {
+                $('#tier3ContributionSection').slideUp(300);
+                $('#contributionAmount').val('').removeClass('error');
+                $('#contributionAmountError').text('').hide();
+            }
+            
+            // Update total amount when tier changes
+            calculateTotalAmount();
         }
+    });
+
+    // Update total amount when contribution amount changes (Tier 3)
+    $(document).on('input', '#contributionAmount', function() {
+        calculateTotalAmount();
+    });
+
+    $('.acknowledgment-checkbox').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#acknowledgmentError').text('').hide();
+        }
+    });
+
+    // Get max attendees based on tier
+    function getMaxAttendees() {
+        const selectedTier = $('input[name="tier"]:checked').val();
+        if (selectedTier === 'tier1') return 3;
+        if (selectedTier === 'tier2') return 2;
+        if (selectedTier === 'tier3') return 1;
+        return 0;
     }
-    
-    // Function to update delete buttons visibility
-    function updateDeleteButtonsVisibility() {
-        const deleteButtons = attendeeFieldsContainer.querySelectorAll('.attendee-delete-btn');
-        const currentCount = getAttendeeCount();
-        deleteButtons.forEach(btn => {
-            btn.style.display = currentCount > 1 ? 'flex' : 'none';
-        });
+
+    // Get max additional attendees based on tier
+    function getMaxAdditionalAttendees() {
+        const selectedTier = $('input[name="tier"]:checked').val();
+        if (selectedTier === 'tier1') return 3;
+        if (selectedTier === 'tier2') return 2;
+        if (selectedTier === 'tier3') return 1; // Only one additional person allowed for Tier 3
+        return 0;
     }
-    
-    // Function to generate attendee fields based on tier
-    function generateAttendeeFields(tierValue) {
-        complimentaryAttendees = tierValue === 'tier1' ? 3 : 2;
-        additionalAttendeesAllowed = tierValue === 'tier1' ? 3 : 2;
-        maxAttendees = complimentaryAttendees; // Start with complimentary only
-        hasConfirmedAdditionalAttendees = false; // Reset confirmation
-        
-        attendeeFieldsContainer.innerHTML = '';
-        attendeeCounter = 1;
-        
-        // Start with one attendee by default
-        const firstRow = createAttendeeRow(attendeeCounter);
-        attendeeFieldsContainer.appendChild(firstRow);
-        
-        // Add the "Add Attendee" button container
-        const addButtonContainer = document.createElement('div');
-        addButtonContainer.className = 'add-attendee-container';
-        const addButton = document.createElement('button');
-        addButton.type = 'button';
-        addButton.id = 'addAttendeeBtn';
-        addButton.className = 'add-attendee-btn';
-        addButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>Add Attendee</span>
+
+    // Get current regular attendee count
+    function getCurrentAttendeeCount() {
+        return $('.attendee-row:not(.additional-attendee)').length;
+    }
+
+    // Get current additional attendee count
+    function getCurrentAdditionalAttendeeCount() {
+        return $('.attendee-row.additional-attendee').length;
+    }
+
+    // Get total attendee count
+    function getTotalAttendeeCount() {
+        return $('.attendee-row').length;
+    }
+
+    // Create attendee row HTML
+    function createAttendeeRow(attendeeNumber, isAdditional = false) {
+        const additionalClass = isAdditional ? 'additional-attendee' : '';
+        const additionalBadge = isAdditional ? '<span class="additional-badge">Additional ($300)</span>' : '';
+        return `
+            <div class="attendee-row ${additionalClass}" data-attendee="${attendeeNumber}" data-additional="${isAdditional}">
+                <div class="attendee-number">
+                    ${isAdditional ? `Additional Attendee ${attendeeNumber - getMaxAttendees()}` : `Attendee ${attendeeNumber}`}
+                    ${additionalBadge}
+                </div>
+                <div class="attendee-input-group">
+                    <label class="attendee-input-label">Name</label>
+                    <input type="text" class="attendee-input required" name="attendeeName" placeholder="Enter attendee name">
+                    <span class="error-message" id="attendee${attendeeNumber}NameError"></span>
+                </div>
+                <div class="attendee-input-group">
+                    <label class="attendee-input-label">Title/Position</label>
+                    <input type="text" class="attendee-input required" name="attendeeTitle" placeholder="Enter title/position">
+                    <span class="error-message" id="attendee${attendeeNumber}TitleError"></span>
+                </div>
+                ${(attendeeNumber > 1 || isAdditional) ? `
+                <div class="attendee-actions">
+                    <button type="button" class="attendee-delete-btn" data-attendee="${attendeeNumber}">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                ` : ''}
+            </div>
         `;
-        addButton.addEventListener('click', addAttendee);
-        addButtonContainer.appendChild(addButton);
-        attendeeFieldsContainer.appendChild(addButtonContainer);
-        
-        updateAddButtonVisibility();
-        updateDeleteButtonsVisibility();
-        
-        // Hide any existing confirmation
-        hideAdditionalAttendeesConfirmation();
     }
-    
-    // Function to setup contact field event listeners
-    function setupContactFieldListeners() {
-        const institutionNameInput = document.getElementById('institutionName');
-        const contactNameInput = document.getElementById('contactName');
-        const emailInput = document.getElementById('email');
-        const phoneInput = document.getElementById('phone');
+
+    // Initialize attendee fields based on selected tier (start with 1)
+    function initializeAttendeeFields() {
+        const attendeeFields = $('#attendeeFields');
+        const additionalAttendeeFields = $('#additionalAttendeeFields');
         
-        if (institutionNameInput) {
-            institutionNameInput.addEventListener('input', function() {
-                hideError('institutionNameError');
-                setInputError(this, false);
-            });
-        }
+        // Clear existing attendees
+        attendeeFields.empty();
+        additionalAttendeeFields.empty();
         
-        if (contactNameInput) {
-            contactNameInput.addEventListener('input', function() {
-                hideError('contactNameError');
-                setInputError(this, false);
-            });
-        }
+        // Start with 1 attendee
+        attendeeFields.append(createAttendeeRow(1, false));
+        updateAddAttendeeButton();
+        updateAdditionalAttendeeSection();
+        updateCostSummary();
+        $('#addAttendeeContainer').show();
+    }
+
+    // Add new regular attendee
+    function addAttendee() {
+        const currentCount = getCurrentAttendeeCount();
+        const maxAttendees = getMaxAttendees();
         
-        if (emailInput) {
-            emailInput.addEventListener('input', function() {
-                hideError('emailError');
-                setInputError(this, false);
-            });
-        }
-        
-        if (phoneInput) {
-            phoneInput.addEventListener('input', function() {
-                hideError('phoneError');
-                setInputError(this, false);
-            });
+        if (currentCount < maxAttendees) {
+            const newAttendeeNumber = currentCount + 1;
+            $('#attendeeFields').append(createAttendeeRow(newAttendeeNumber, false));
+            updateAddAttendeeButton();
+            updateAdditionalAttendeeSection();
+            calculateTotalAmount();
+            
+            // Scroll to new attendee
+            $('html, body').animate({
+                scrollTop: $(`.attendee-row[data-attendee="${newAttendeeNumber}"]`).offset().top - 100
+            }, 400);
         }
     }
-    
-    // Function to check tier selection and show/hide fields
-    function checkTierAndShowFields() {
-        const selectedTier = form.querySelector('input[name="tier"]:checked');
-        const isAcknowledged = acknowledgmentCheckbox.checked;
+
+    // Add additional attendee
+    function addAdditionalAttendee() {
+        const currentAdditionalCount = getCurrentAdditionalAttendeeCount();
+        const maxAdditional = getMaxAdditionalAttendees();
         
-        // Hide error message initially
-        tierError.style.display = 'none';
+        if (currentAdditionalCount < maxAdditional) {
+            const totalCount = getTotalAttendeeCount();
+            const newAttendeeNumber = totalCount + 1;
+            $('#additionalAttendeeFields').append(createAttendeeRow(newAttendeeNumber, true));
+            updateAdditionalAttendeeButton();
+            updateCostSummary();
+            
+            // Scroll to new attendee
+            $('html, body').animate({
+                scrollTop: $(`.attendee-row[data-attendee="${newAttendeeNumber}"]`).offset().top - 100
+            }, 400);
+        }
+    }
+
+    // Remove attendee
+    function removeAttendee(attendeeNumber) {
+        const attendeeRow = $(`.attendee-row[data-attendee="${attendeeNumber}"]`);
+        const isAdditional = attendeeRow.hasClass('additional-attendee');
         
-        // If checkbox is checked
-        if (isAcknowledged) {
-            // If tier is selected, show contact fields and attendee section
-            if (selectedTier) {
-                contactFieldsSection.style.display = 'flex';
-                attendeeSection.style.display = 'flex';
-                tierError.style.display = 'none';
-                
-                // Setup contact field listeners
-                setupContactFieldListeners();
-                
-                // Generate attendee fields based on selected tier
-                generateAttendeeFields(selectedTier.value);
-            } else {
-                // If no tier selected, show error message
-                contactFieldsSection.style.display = 'none';
-                attendeeSection.style.display = 'none';
-                tierError.style.display = 'block';
-            }
+        attendeeRow.remove();
+        
+        if (isAdditional) {
+            // Renumber additional attendees
+            renumberAdditionalAttendees();
+            updateAdditionalAttendeeButton();
+            updateCostSummary();
         } else {
-            // If checkbox is unchecked, hide everything
-            contactFieldsSection.style.display = 'none';
-            attendeeSection.style.display = 'none';
-            tierError.style.display = 'none';
+            // Renumber regular attendees
+            renumberAttendees();
+            updateAddAttendeeButton();
+            updateAdditionalAttendeeSection();
         }
-    }
-    
-    // Handle acknowledgment checkbox click
-    acknowledgmentCheckbox.addEventListener('change', function() {
-        hideError('acknowledgmentError');
-        checkTierAndShowFields();
-    });
-    
-    // Handle tier selection change
-    tierRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Clear tier error
-            tierError.style.display = 'none';
-            
-            // Remove any previous selection highlights
-            tierRadios.forEach(r => {
-                const content = r.nextElementSibling;
-                if (content) {
-                    content.classList.remove('selected');
-                }
-            });
-            
-            // Add highlight to selected tier
-            if (this.checked) {
-                const content = this.nextElementSibling;
-                if (content) {
-                    content.classList.add('selected');
-                }
-            }
-            
-            // Check if checkbox is checked and update fields visibility
-            if (acknowledgmentCheckbox.checked) {
-                checkTierAndShowFields();
-            }
-        });
-    });
-    
-    // Handle form submission
-    function validate() {
-        var valid = true;
-        $('input, select').removeClass('danger')
-        $(".alert-danger").remove();
-        $(".required:visible").each(function () {
-            if ($(this).val() == "" || $(this).val() == null) {
-                $(this).closest("div").append('<div class="alert-danger ps-1">This field is required</div>');
-                $(this).addClass('danger')
-                valid = false;
-            }
-        });
-        $(".email:visible").each(function () {
-            var emailReg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/
-            email_check = emailReg.test($(this).val())
-            if (email_check == false) {
-                $(this).closest("div").append('<div class="alert-danger ps-1">Invalid email format</div>');
-                $(this).addClass('danger')
-                valid = false;
-            }
-        })
-    
-        var select
-        $(".select:visible").each(function () {
-            select = $(this);
-            if (select.hasClass('required') && (select.find('option:selected').val() == "" || select.find('option:selected').val() == null)) {
-                $(this).closest("div").find('.alert-danger').remove()
-                $(this).closest("div").append('<div class="alert-danger ps-1">This field is required</div>');
-                $(this).closest('div').find('.select2-selection').addClass('danger')
-                valid = false;
-            }
-        });
-
-        if (!valid) {
-            $("html, body").animate(
-                {
-                    scrollTop: $(".alert-danger:first").offset().top - 80,
-                },
-                100
-            );
-        }
-
-        return valid;
-    }    
-
-    // Function to show success modal
-    function showSuccessModal() {
-        const selectedTier = form.querySelector('input[name="tier"]:checked');
-        const successModal = document.getElementById('successModal');
-        const successMessage = document.getElementById('successMessage');
         
-        if (selectedTier) {
-            const tierName = selectedTier.value === 'tier1' ? 'Tier 1 — National Stewardship Partner' : 'Tier 2 — Supporting Cultural Partner';
-            const attendeeCount = getAttendeeCount();
-            const complimentaryCount = selectedTier.value === 'tier1' ? 3 : 2;
-            const additionalCount = attendeeCount > complimentaryCount ? attendeeCount - complimentaryCount : 0;
-            const additionalCost = additionalCount * 300;
+        // Update total amount when attendee is removed
+        calculateTotalAmount();
+    }
+
+    // Renumber regular attendees after deletion
+    function renumberAttendees() {
+        $('.attendee-row:not(.additional-attendee)').each(function(index) {
+            const newNumber = index + 1;
+            $(this).attr('data-attendee', newNumber);
+            $(this).find('.attendee-number').html(`Attendee ${newNumber}`);
             
-            let message = `Thank you for selecting ${tierName}. Your form has been submitted successfully.`;
+            // Update input names and IDs
+            const nameInput = $(this).find('input[name^="attendee"][name$="Name"]');
+            const titleInput = $(this).find('input[name^="attendee"][name$="Title"]');
+            const nameError = $(this).find('span[id^="attendee"][id$="NameError"]');
+            const titleError = $(this).find('span[id^="attendee"][id$="TitleError"]');
             
-            if (additionalCount > 0) {
-                message += `\n\nYou have ${complimentaryCount} complimentary attendee${complimentaryCount > 1 ? 's' : ''} and ${additionalCount} additional attendee${additionalCount > 1 ? 's' : ''} at $300 each (Total: $${additionalCost.toLocaleString()}).`;
+            nameInput.attr('name', `attendee${newNumber}Name`).attr('id', `attendee${newNumber}Name`);
+            titleInput.attr('name', `attendee${newNumber}Title`).attr('id', `attendee${newNumber}Title`);
+            nameError.attr('id', `attendee${newNumber}NameError`);
+            titleError.attr('id', `attendee${newNumber}TitleError`);
+            
+            // Handle delete button
+            const deleteBtnContainer = $(this).find('.attendee-actions');
+            if (newNumber === 1) {
+                // Remove delete button from first attendee
+                deleteBtnContainer.remove();
             } else {
-                message += `\n\nYou have ${attendeeCount} complimentary attendee${attendeeCount > 1 ? 's' : ''}.`;
-            }
-            
-            successMessage.textContent = message;
-        } else {
-            successMessage.textContent = 'Thank you for your partnership selection. Your form has been submitted successfully.';
-        }
-        
-        successModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-    
-    // Function to hide success modal
-    function hideSuccessModal() {
-        const successModal = document.getElementById('successModal');
-        successModal.style.display = 'none';
-        document.body.style.overflow = '';
-        
-        // Redirect to same location (reload page)
-        window.location.href = window.location.href;
-    }
-    
-    // Setup success modal event listeners
-    const modalElement = document.getElementById('successModal');
-    const closeBtn = document.getElementById('closeSuccessModal');
-    
-    if (closeBtn) {
-        closeBtn.addEventListener('click', hideSuccessModal);
-    }
-    
-    if (modalElement) {
-        modalElement.addEventListener('click', function(e) {
-            if (e.target.classList.contains('success-modal-overlay')) {
-                hideSuccessModal();
+                // Update or add delete button for other attendees
+                if (deleteBtnContainer.length) {
+                    deleteBtnContainer.find('.attendee-delete-btn').attr('data-attendee', newNumber);
+                } else {
+                    $(this).find('.attendee-input-group').last().after(`
+                        <div class="attendee-actions">
+                            <button type="button" class="attendee-delete-btn" data-attendee="${newNumber}">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `);
+                }
             }
         });
     }
-    
-    // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modalElement && modalElement.style.display === 'flex') {
-            hideSuccessModal();
+
+    // Update add attendee button visibility
+    function updateAddAttendeeButton() {
+        const currentCount = getCurrentAttendeeCount();
+        const maxAttendees = getMaxAttendees();
+        const addBtn = $('#addAttendeeBtn');
+        
+        if (currentCount >= maxAttendees) {
+            addBtn.hide();
+        } else {
+            addBtn.show();
         }
+    }
+
+    // Update additional attendee section visibility
+    function updateAdditionalAttendeeSection() {
+        const currentCount = getCurrentAttendeeCount();
+        const maxAttendees = getMaxAttendees();
+        const additionalSection = $('#additionalAttendeeSection');
+        
+        if (currentCount >= maxAttendees) {
+            additionalSection.slideDown(300);
+        } else {
+            // Clear additional attendees if regular slots are available
+            const additionalCount = getCurrentAdditionalAttendeeCount();
+            if (additionalCount > 0 && currentCount < maxAttendees) {
+                $('#additionalAttendeeFields').empty();
+                updateCostSummary();
+            }
+            additionalSection.slideUp(300);
+        }
+    }
+
+    // Update additional attendee button visibility
+    function updateAdditionalAttendeeButton() {
+        const currentAdditionalCount = getCurrentAdditionalAttendeeCount();
+        const maxAdditional = getMaxAdditionalAttendees();
+        const addBtn = $('#addAdditionalAttendeeBtn');
+        
+        if (currentAdditionalCount >= maxAdditional) {
+            addBtn.hide();
+        } else {
+            addBtn.show();
+        }
+    }
+
+    // Update cost summary
+    function updateCostSummary() {
+        const additionalCount = getCurrentAdditionalAttendeeCount();
+        const additionalCost = additionalCount * 300;
+        const costSummary = $('#additionalCostSummary');
+        
+        if (additionalCount > 0) {
+            costSummary.html(`
+                <div class="cost-summary-content">
+                    <div class="cost-summary-row">
+                        <span class="cost-label">Additional Attendees (${additionalCount} × $300):</span>
+                        <span class="cost-value">$${additionalCost.toLocaleString()}</span>
+                    </div>
+                </div>
+            `).slideDown(300);
+        } else {
+            costSummary.slideUp(300);
+        }
+        
+        // Update total amount
+        calculateTotalAmount();
+    }
+
+    // Calculate total amount
+    function calculateTotalAmount() {
+        const selectedTier = $('input[name="tier"]:checked').val();
+        let baseAmount = 0;
+        
+        // Get base contribution amount
+        if (selectedTier === 'tier1') {
+            baseAmount = 3000;
+        } else if (selectedTier === 'tier2') {
+            baseAmount = 1500;
+        } else if (selectedTier === 'tier3') {
+            const contributionAmount = $('#contributionAmount').val();
+            baseAmount = contributionAmount ? parseFloat(contributionAmount.replace(/[^0-9.]/g, '')) || 0 : 0;
+            if (baseAmount < 300) baseAmount = 0; // Not valid if less than minimum
+        }
+        
+        // Add additional attendees cost
+        const additionalCount = getCurrentAdditionalAttendeeCount();
+        const additionalCost = additionalCount * 300;
+        
+        // Calculate total
+        const totalAmount = baseAmount + additionalCost;
+        
+        // Update hidden field
+        $('#totalAmount').val(totalAmount.toFixed(2));
+        
+        return totalAmount;
+    }
+
+    // Renumber additional attendees
+    function renumberAdditionalAttendees() {
+        const maxRegular = getMaxAttendees();
+        let additionalIndex = 1;
+        
+        $('.attendee-row.additional-attendee').each(function() {
+            const newAttendeeNumber = maxRegular + additionalIndex;
+            $(this).attr('data-attendee', newAttendeeNumber);
+            $(this).find('.attendee-number').html(`Additional Attendee ${additionalIndex}<span class="additional-badge">Additional ($300)</span>`);
+            
+            // Update input names and IDs
+            const nameInput = $(this).find('input[name^="attendee"][name$="Name"]');
+            const titleInput = $(this).find('input[name^="attendee"][name$="Title"]');
+            const nameError = $(this).find('span[id^="attendee"][id$="NameError"]');
+            const titleError = $(this).find('span[id^="attendee"][id$="TitleError"]');
+            
+            nameInput.attr('name', `attendee${newAttendeeNumber}Name`).attr('id', `attendee${newAttendeeNumber}Name`);
+            titleInput.attr('name', `attendee${newAttendeeNumber}Title`).attr('id', `attendee${newAttendeeNumber}Title`);
+            nameError.attr('id', `attendee${newAttendeeNumber}NameError`);
+            titleError.attr('id', `attendee${newAttendeeNumber}TitleError`);
+            
+            // Update delete button
+            $(this).find('.attendee-delete-btn').attr('data-attendee', newAttendeeNumber);
+            
+            additionalIndex++;
+        });
+    }
+
+    // Add attendee button click handler
+    $(document).on('click', '#addAttendeeBtn', function() {
+        addAttendee();
     });
-    
-    $(document).on('click', '.submit-button', function(e) {
+
+    // Add additional attendee button click handler
+    $(document).on('click', '#addAdditionalAttendeeBtn', function() {
+        addAdditionalAttendee();
+    });
+
+    // Delete attendee button click handler
+    $(document).on('click', '.attendee-delete-btn', function() {
+        const attendeeNumber = $(this).data('attendee');
+        removeAttendee(attendeeNumber);
+    });
+
+    // Form submission
+    $(document).on('click', '.btn-submit', function(e) {
         e.preventDefault();
-        console.log('Submit button clicked');
         
-        // Clear all errors first
-        clearAllErrors();
+        // Validate attendee fields - require at least 1 complete attendee
+        let isValid = true;
+        let firstErrorField = null;
+        let hasAtLeastOneComplete = false;
         
-        // Validate tier selection
-        const selectedTier = form.querySelector('input[name="tier"]:checked');
-        if (!selectedTier) {
-            tierError.style.display = 'block';
-            $("html, body").animate({
-                scrollTop: $("#tierError").offset().top - 80,
-            }, 100);
-            return;
-        }
+        // First, clear all errors
+        $('.attendee-input.required').removeClass('error');
+        $('.attendee-input.required').each(function() {
+            const fieldName = $(this).attr('name');
+            $(`#${fieldName}Error`).hide();
+        });
         
-        // Validate acknowledgment
-        if (!acknowledgmentCheckbox.checked) {
-            showError('acknowledgmentError', 'Please acknowledge and understand the above distinctions.');
-            $("html, body").animate({
-                scrollTop: $("#acknowledgmentError").offset().top - 80,
-            }, 100);
-            return;
-        }
-        
-        // Validate form fields
-        if(validate()) {
-            console.log('Form is valid');
+        // Validate each attendee row
+        $('.attendee-row').each(function() {
+            const attendeeNumber = $(this).data('attendee') || ($(this).index() + 1);
             
-            // Disable submit button
-            const submitButton = form.querySelector('.submit-button');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = 'Processing...';
+            // Try both naming conventions
+            let nameInput = $(this).find(`input[name="attendee${attendeeNumber}Name"]`);
+            let titleInput = $(this).find(`input[name="attendee${attendeeNumber}Title"]`);
+            
+            // Fallback to generic names if not found
+            if (nameInput.length === 0) {
+                nameInput = $(this).find('input[name="attendeeName"]').first();
+            }
+            if (titleInput.length === 0) {
+                titleInput = $(this).find('input[name="attendeeTitle"]').first();
             }
             
-            // Simulate form processing (replace with actual submission logic)
-            setTimeout(() => {
-                showSuccessModal();
-                
-                // Re-enable submit button
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Submit';
+            const nameValue = nameInput.length > 0 ? nameInput.val().trim() : '';
+            const titleValue = titleInput.length > 0 ? titleInput.val().trim() : '';
+            
+            // Check if this attendee is complete
+            if (nameValue && titleValue) {
+                hasAtLeastOneComplete = true;
+            }
+            
+            // If either field has a value, both are required
+            if (nameValue || titleValue) {
+                if (!nameValue) {
+                    nameInput.addClass('error');
+                    const nameErrorId = nameInput.closest('.attendee-row').find('span[id*="NameError"]').attr('id');
+                    if (nameErrorId) {
+                        $(`#${nameErrorId}`).text('Name is required.').show();
+                    }
+                    if (!firstErrorField) {
+                        firstErrorField = nameInput;
+                    }
+                    isValid = false;
                 }
-            }, 1000);
+                if (!titleValue) {
+                    titleInput.addClass('error');
+                    const titleErrorId = titleInput.closest('.attendee-row').find('span[id*="TitleError"]').attr('id');
+                    if (titleErrorId) {
+                        $(`#${titleErrorId}`).text('Title/Position is required.').show();
+                    }
+                    if (!firstErrorField) {
+                        firstErrorField = titleInput;
+                    }
+                    isValid = false;
+                }
+            }
+        });
+        
+        // Check if at least one complete attendee exists
+        if (!hasAtLeastOneComplete) {
+            isValid = false;
+            const firstRow = $('.attendee-row').first();
+            let firstAttendeeName = firstRow.find('input[name="attendee1Name"]');
+            let firstAttendeeTitle = firstRow.find('input[name="attendee1Title"]');
+            
+            // Fallback to generic names
+            if (firstAttendeeName.length === 0) {
+                firstAttendeeName = firstRow.find('input[name="attendeeName"]').first();
+            }
+            if (firstAttendeeTitle.length === 0) {
+                firstAttendeeTitle = firstRow.find('input[name="attendeeTitle"]').first();
+            }
+            
+            if (firstAttendeeName.length > 0) firstAttendeeName.addClass('error');
+            if (firstAttendeeTitle.length > 0) firstAttendeeTitle.addClass('error');
+            
+            const firstErrorId = firstAttendeeName.attr('id') || 'attendee1NameError';
+            $(`#${firstErrorId}`).text('At least one attendee is required.').show();
+            
+            if (!firstErrorField && firstAttendeeName.length > 0) {
+                firstErrorField = firstAttendeeName;
+            }
         }
+        
+        if (!isValid) {
+            // Scroll to first error field
+            if (firstErrorField && firstErrorField.length) {
+                $('html, body').animate({
+                    scrollTop: firstErrorField.offset().top - 100
+                }, 600);
+                // Focus on the field
+                setTimeout(function() {
+                    firstErrorField.focus();
+                }, 650);
+            } else {
+                $('html, body').animate({
+                    scrollTop: $('.stepper-container').offset().top - 20
+                }, 600);
+            }
+            return;
+        }
+        
+        // Prepare form data for Google Sheets
+        submitToGoogleSheets();
     });
+
+    // Function to collect and submit form data to Google Sheets
+    function submitToGoogleSheets() {
+        const $submitBtn = $('.btn-submit');
+        const originalText = $submitBtn.text();
+        
+        // Disable submit button
+        $submitBtn.attr('disabled', 'disabled').text('Please wait...');
+        
+        // Collect all form data
+        const formData = $('#partnershipForm').serialize();
+        
+        // Get Google Sheets URL
+        const url_gsheet = $('#partnershipForm').attr('action');
+        
+        // Add timestamp
+        const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+        const date = new Date().toLocaleDateString('en-US');
+        formData.time = time;
+        formData.date = date;
+        
+        // Submit to Google Sheets
+        $.ajax({
+            type: "POST",
+            url: url_gsheet,
+            data: formData,
+            dataType: "json",
+            success: function (response) {
+                if (response.result == "success") {
+                    // Show success modal
+                    const selectedTier = $('input[name="tier"]:checked').val();
+                    let tierName = '';
+                    let contribution = '';
+                    
+                    if (selectedTier === 'tier1') {
+                        tierName = 'Tier 1 — National Stewardship Partner';
+                        contribution = '$3,000';
+                    } else if (selectedTier === 'tier2') {
+                        tierName = 'Tier 2 — Supporting Cultural Partner';
+                        contribution = '$1,500';
+                    } else if (selectedTier === 'tier3') {
+                        tierName = 'Tier 3 — Unveiling Supporter';
+                        const contributionAmount = $('#contributionAmount').val();
+                        contribution = contributionAmount ? `$${parseFloat(contributionAmount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '$300';
+                    }
+                    
+                    $('#successMessage').text(`Thank you for selecting ${tierName} with a contribution of ${contribution}. Your form has been submitted successfully.`);
+                    $('#successModal').addClass('show').css('display', 'flex').hide().fadeIn(300);
+                    
+                    // Auto reload after 3 seconds
+                    setTimeout(function() {
+                        window.location = window.location.href;
+                    }, 3000);
+                } else {
+                    // Show error
+                    $submitBtn.removeAttr('disabled').text(originalText);
+                    alert('Error: ' + (response.error || 'Something went wrong. Please try again.'));
+                }
+            },
+            error: function (xhr, status, error) {
+                // Show error
+                $submitBtn.removeAttr('disabled').text(originalText);
+                alert('Error: Something went wrong. Please try again.');
+                console.error('Submission error:', error);
+            }
+        });
+    }
+
+    // Function to collect all form data
+    function collectFormData() {
+        const data = {};
+        
+        // Tier selection
+        const selectedTier = $('input[name="tier"]:checked').val();
+        data.tier = selectedTier || '';
+        
+        // Contribution amount (for Tier 3)
+        if (selectedTier === 'tier3') {
+            data.contributionAmount = $('#contributionAmount').val() || '';
+        } else {
+            data.contributionAmount = selectedTier === 'tier1' ? '3000' : (selectedTier === 'tier2' ? '1500' : '');
+        }
+        
+        // Contact information
+        data.institutionName = $('#institutionName').val() || '';
+        data.contactName = $('#contactName').val() || '';
+        data.email = $('#email').val() || '';
+        data.phone = $('#phone').val() || '';
+        
+        // Address information
+        data.street = $('#street').val() || '';
+        data.city = $('#city').val() || '';
+        data.state = $('#state').val() || '';
+        data.zipCode = $('#zipCode').val() || '';
+        
+        // Collect attendees
+        const attendees = [];
+        $('.attendee-row').each(function(index) {
+            const attendeeNumber = $(this).data('attendee') || (index + 1);
+            const isAdditional = $(this).hasClass('additional-attendee');
+            
+            // Try both naming conventions
+            let nameInput = $(this).find('input[name="attendee' + attendeeNumber + 'Name"]');
+            let titleInput = $(this).find('input[name="attendee' + attendeeNumber + 'Title"]');
+            
+            // Fallback to generic names if not found
+            if (nameInput.length === 0) {
+                nameInput = $(this).find('input[name="attendeeName"]').first();
+            }
+            if (titleInput.length === 0) {
+                titleInput = $(this).find('input[name="attendeeTitle"]').first();
+            }
+            
+            const name = nameInput.val() ? nameInput.val().trim() : '';
+            const title = titleInput.val() ? titleInput.val().trim() : '';
+            
+            if (name || title) {
+                attendees.push({
+                    number: attendeeNumber,
+                    name: name,
+                    title: title,
+                    isAdditional: isAdditional
+                });
+            }
+        });
+        
+        // Convert attendees to string format for Google Sheets
+        data.attendees = JSON.stringify(attendees);
+        data.attendeeCount = attendees.length;
+        data.additionalAttendeeCount = attendees.filter(a => a.isAdditional).length;
+        
+        return data;
+    }
+
+    // Close success modal
+    $('#closeSuccessModal').on('click', function() {
+        $('#successModal').fadeOut(300);
+        window.location = window.location.href;
+    });
+
+    // Close modal on overlay click
+    $('.success-modal-overlay').on('click', function() {
+        $('#successModal').fadeOut(300);
+        window.location = window.location.href;
+    });
+
+    // Initialize
+    updateStepper();
+    calculateTotalAmount(); // Initialize total amount
 });
 
+$(document).on('input', '.number', function (e) {
+    this.value = this.value.replace(/[^0.00-9.99]/g, '').replace(/(\..*)\./g, '$1').replace(new RegExp("(^[\\d]{50})[\\d]", "g"), '$1');
+});
+
+function addZero(val) {
+    return val < 10 ? ('0' + val) : val;
+}
