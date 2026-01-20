@@ -462,6 +462,12 @@ body {
     letter-spacing: -0.2px;
 }
 
+.required-asterisk {
+    color: #dc2626;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
 .form-input {
     width: 100%;
     padding: 14px 16px;
@@ -1503,6 +1509,226 @@ body {
     .additional-badge {
         font-size: 10px;
         padding: 3px 8px;
+    }
+}
+
+/* Payment Section Styles */
+.payment-section {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 32px;
+    background-color: var(--bg-section);
+    border-radius: 12px;
+    border: 1px solid var(--border-gray);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.payment-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin: 0;
+    letter-spacing: -0.3px;
+}
+
+/* Invoice Summary */
+.invoice-summary-section {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.invoice-summary-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin: 0 0 20px 0;
+    letter-spacing: -0.3px;
+}
+
+.invoice-summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.invoice-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.invoice-row:last-child {
+    border-bottom: none;
+}
+
+.invoice-row.invoice-total {
+    border-top: 2px solid var(--primary-black);
+    border-bottom: none;
+    padding-top: 16px;
+    margin-top: 8px;
+}
+
+.invoice-label {
+    font-size: 15px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.invoice-row.invoice-total .invoice-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-black);
+}
+
+.invoice-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-black);
+}
+
+.invoice-row.invoice-total .invoice-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-black);
+}
+
+/* Payment Form Section */
+.payment-form-section {
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-gray);
+    border-radius: 12px;
+    padding: 32px;
+}
+
+.payment-form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin: 0 0 24px 0;
+    letter-spacing: -0.3px;
+}
+
+.payment-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Stripe Elements Card Container */
+.stripe-card-element {
+    padding: 14px 16px;
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-gray);
+    border-radius: 8px;
+    transition: var(--transition);
+    min-height: 50px;
+}
+
+.stripe-card-element:focus-within {
+    border-color: var(--primary-black);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.stripe-card-element.stripe-error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Stripe Field Error */
+.stripe-field-error {
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+    display: none;
+    line-height: 1.4;
+}
+
+.stripe-field-error:not(:empty) {
+    display: block;
+}
+
+/* Stripe Error Box */
+.stripe-error-box {
+    background-color: #fef2f2;
+    border: 2px solid #dc2626;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.stripe-error-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #dc2626;
+}
+
+.stripe-error-content svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.stripe-error-content span {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Mobile Responsive for Payment */
+@media (max-width: 768px) {
+    .payment-section {
+        padding: 24px;
+        gap: 24px;
+    }
+    
+    .payment-title {
+        font-size: 18px;
+    }
+    
+    .invoice-summary-section {
+        padding: 20px;
+    }
+    
+    .invoice-summary-title {
+        font-size: 16px;
+    }
+    
+    .payment-form-section {
+        padding: 24px;
+    }
+    
+    .payment-form-title {
+        font-size: 16px;
+    }
+    
+    .payment-form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .invoice-label {
+        font-size: 14px;
+    }
+    
+    .invoice-value {
+        font-size: 14px;
+    }
+    
+    .invoice-row.invoice-total .invoice-label {
+        font-size: 16px;
+    }
+    
+    .invoice-row.invoice-total .invoice-value {
+        font-size: 18px;
     }
 }
 

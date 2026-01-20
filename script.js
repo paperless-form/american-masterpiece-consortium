@@ -7,7 +7,115 @@ $(document).ready(function() {
     $('.order_ref').val(ref);
 
     let currentStep = 1;
-    const totalSteps = 3;
+    const totalSteps = 4;
+    
+    // Initialize Stripe
+    let stripe = null;
+    let elements = null;
+    let cardElement = null;
+    let stripeInitialized = false;
+    
+    // Initialize Stripe when library is loaded
+    function initializeStripe() {
+        return new Promise(function(resolve, reject) {
+            if (typeof Stripe === 'undefined') {
+                reject('Stripe.js library not loaded');
+                return;
+            }
+            
+            // Check if publishable key is available (from PHP or global variable)
+            let publishableKey = null;
+            
+            // Try to get from global variable (set in index.php)
+            if (typeof STRIPE_PUBLISHABLE_KEY !== 'undefined' && STRIPE_PUBLISHABLE_KEY) {
+                publishableKey = STRIPE_PUBLISHABLE_KEY;
+            }
+            
+            if (!publishableKey) {
+                reject('Stripe publishable key is not configured');
+                return;
+            }
+            
+            try {
+                stripe = Stripe(publishableKey);
+                stripeInitialized = true;
+                console.log('Stripe initialized successfully');
+                // As soon as Stripe is ready, initialize Elements so the card field
+                // is already mounted by the time the user reaches the payment step.
+                initializeStripeElements();
+                resolve(true);
+            } catch (error) {
+                console.error('Error creating Stripe instance:', error);
+                reject('Failed to create Stripe instance: ' + error.message);
+            }
+        });
+    }
+    
+    // Initialize Stripe Elements when step 4 is shown
+    function initializeStripeElements() {
+        if (!stripe || !stripeInitialized) {
+            console.error('Stripe not initialized, cannot create Elements');
+            return false;
+        }
+        
+        // Don't reinitialize if already done
+        if (cardElement) {
+            return true;
+        }
+        
+        try {
+            // Create Elements instance
+            if (!elements) {
+                elements = stripe.elements();
+            }
+            
+            // Create and mount the card element
+            cardElement = elements.create('card', {
+                style: {
+                    base: {
+                        fontSize: '16px',
+                        color: '#32325d',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        '::placeholder': {
+                            color: '#aab7c4'
+                        }
+                    },
+                    invalid: {
+                        color: '#dc2626',
+                        iconColor: '#dc2626'
+                    }
+                }
+            });
+            
+            // Mount the card element
+            cardElement.mount('#card-element');
+            
+            // Handle real-time validation errors from Stripe
+            cardElement.on('change', function(event) {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    displayError.style.display = 'block';
+                    $('#card-element').addClass('stripe-error');
+                } else {
+                    displayError.textContent = '';
+                    displayError.style.display = 'none';
+                    $('#card-element').removeClass('stripe-error');
+                }
+            });
+            
+            // Handle card completion
+            cardElement.on('ready', function() {
+                console.log('Stripe Elements card ready');
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('Error initializing Stripe Elements:', error);
+            showStripeError('Failed to initialize payment form. Please refresh the page.');
+            return false;
+        }
+    }
 
     // Initialize stepper
     function updateStepper() {
@@ -46,6 +154,11 @@ $(document).ready(function() {
         } else {
             $('#addAttendeeContainer').hide();
             $('#additionalAttendeeSection').hide();
+        }
+        
+        // Update invoice summary when showing step 4
+        if (step === 4) {
+            updateInvoiceSummary();
         }
         
         // Smooth scroll to stepper container
@@ -200,6 +313,11 @@ $(document).ready(function() {
     // Previous Step 3 Button
     $('#prevStep3').on('click', function() {
         showStep(2);
+    });
+
+    // Previous Step 4 Button
+    $('#prevStep4').on('click', function() {
+        showStep(3);
     });
 
     // Real-time validation for step 1
@@ -513,7 +631,41 @@ $(document).ready(function() {
         // Update hidden field
         $('#totalAmount').val(totalAmount.toFixed(2));
         
+        // Update invoice summary
+        updateInvoiceSummary();
+        
         return totalAmount;
+    }
+
+    // Update invoice summary display
+    function updateInvoiceSummary() {
+        const selectedTier = $('input[name="tier"]:checked').val();
+        let baseAmount = 0;
+        
+        // Get base contribution amount
+        if (selectedTier === 'tier1') {
+            baseAmount = 3000;
+        } else if (selectedTier === 'tier2') {
+            baseAmount = 1500;
+        } else if (selectedTier === 'tier3') {
+            const contributionAmount = $('#contributionAmount').val();
+            baseAmount = contributionAmount ? parseFloat(contributionAmount.replace(/[^0-9.]/g, '')) || 0 : 0;
+            if (baseAmount < 300) baseAmount = 0;
+        }
+        
+        const additionalCount = getCurrentAdditionalAttendeeCount();
+        const additionalCost = additionalCount * 300;
+        const totalAmount = baseAmount + additionalCost;
+        
+        // Update invoice summary
+        $('#invoiceBaseContribution').text('$' + baseAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        if (additionalCount > 0) {
+            $('#invoiceAdditionalAttendeesRow').show();
+            $('#invoiceAdditionalAttendeesCost').text('$' + additionalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        } else {
+            $('#invoiceAdditionalAttendeesRow').hide();
+        }
+        $('#invoiceTotalAmount').text('$' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
     }
 
     // Renumber additional attendees
@@ -560,8 +712,8 @@ $(document).ready(function() {
         removeAttendee(attendeeNumber);
     });
 
-    // Form submission
-    $(document).on('click', '.btn-submit', function(e) {
+    // Handle Proceed to Payment button
+    $('#proceedToPayment').on('click', function(e) {
         e.preventDefault();
         
         // Validate attendee fields - require at least 1 complete attendee
@@ -671,20 +823,164 @@ $(document).ready(function() {
             return;
         }
         
-        // Prepare form data for Google Sheets
-        submitToGoogleSheets();
+        // Proceed to payment step
+        showStep(4);
+        updateInvoiceSummary();
     });
 
-    // Function to collect and submit form data to Google Sheets
-    function submitToGoogleSheets() {
-        const $submitBtn = $('.btn-submit');
+    // Payment form submission
+    $('#submitPayment').on('click', function(e) {
+        e.preventDefault();
+        
+        // Hide Stripe error box
+        $('#stripeErrorBox').hide();
+        
+        // Check if Stripe Elements is initialized
+        if (!cardElement) {
+            showStripeError('Payment form is not ready. Please wait a moment and try again.');
+            return false;
+        }
+        
+        // Process payment with Stripe Elements
+        processStripePayment();
+    });
+    
+    // Function to show Stripe error
+    function showStripeError(message) {
+        $('#stripeErrorText').text(message);
+        $('#stripeErrorBox').show();
+        
+        // Scroll to error box
+        $('html, body').animate({
+            scrollTop: $('#stripeErrorBox').offset().top - 100
+        }, 600);
+    }
+    
+    // Function to process Stripe payment
+    async function processStripePayment() {
+        const $submitBtn = $('#submitPayment');
         const originalText = $submitBtn.text();
         
+        // Check if Stripe is initialized, if not, try to initialize
+        if (!stripeInitialized || !stripe) {
+            try {
+                await initializeStripe();
+            } catch (error) {
+                showStripeError('Payment system is not available. Please refresh the page and try again.');
+                console.error('Stripe initialization failed:', error);
+                return;
+            }
+        }
+        
+        // Double check after initialization attempt
+        if (!stripeInitialized || !stripe) {
+            showStripeError('Payment system is not available. Please refresh the page and try again.');
+            return;
+        }
+        
+        // Check if Stripe Elements card element is initialized
+        if (!cardElement) {
+            showStripeError('Payment form is not ready. Please wait a moment and try again.');
+            // Try to initialize Elements
+            if (!initializeStripeElements()) {
+                return;
+            }
+        }
+        
         // Disable submit button
-        $submitBtn.attr('disabled', 'disabled').text('Please wait...');
+        $submitBtn.attr('disabled', 'disabled').text('Processing...');
+        
+        try {
+            // Get total amount
+            const totalAmount = parseFloat($('#totalAmount').val()) || 0;
+            
+            if (totalAmount <= 0) {
+                showStripeError('Invalid payment amount. Please go back and complete the form.');
+                $submitBtn.removeAttr('disabled').text(originalText);
+                return;
+            }
+            
+            // Create payment intent on server
+            const paymentIntentResponse = await $.ajax({
+                url: 'create-payment-intent.php',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    amount: Math.round(totalAmount * 100), // Convert to cents
+                    currency: 'usd',
+                    order_ref: $('.order_ref').val()
+                }),
+                dataType: 'json'
+            });
+            
+            // Check for errors in response
+            if (paymentIntentResponse.error) {
+                showStripeError(paymentIntentResponse.error);
+                $submitBtn.removeAttr('disabled').text(originalText);
+                return;
+            }
+            
+            const { clientSecret, paymentIntentId } = paymentIntentResponse;
+            
+            if (!clientSecret) {
+                showStripeError('Failed to create payment intent. Please try again.');
+                $submitBtn.removeAttr('disabled').text(originalText);
+                return;
+            }
+            
+            // Use Stripe Elements card element to create payment method
+            const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement
+            });
+            
+            if (pmError) {
+                showStripeError(pmError.message);
+                $submitBtn.removeAttr('disabled').text(originalText);
+                return;
+            }
+            
+            // Confirm payment with payment intent
+            const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: paymentMethod.id
+            });
+            
+            if (error) {
+                showStripeError(error.message);
+                $submitBtn.removeAttr('disabled').text(originalText);
+                return;
+            }
+            
+            if (paymentIntent.status === 'succeeded') {
+                // Payment successful - submit to Google Sheets
+                submitToGoogleSheets(paymentIntent.id);
+            } else {
+                showStripeError('Payment was not completed. Please try again.');
+                $submitBtn.removeAttr('disabled').text(originalText);
+            }
+            
+        } catch (error) {
+            console.error('Payment error:', error);
+            showStripeError(error.message || 'An error occurred. Please try again.');
+            $submitBtn.removeAttr('disabled').text(originalText);
+        }
+    }
+
+    // Function to collect and submit form data to Google Sheets
+    function submitToGoogleSheets(paymentIntentId = null) {
+        const $submitBtn = $('#submitPayment');
+        const originalText = $submitBtn.text();
+        
+        // Keep button disabled and show processing
+        $submitBtn.attr('disabled', 'disabled').text('Saving...');
         
         // Collect all form data
-        const formData = $('#partnershipForm').serialize();
+        let formData = $('#partnershipForm').serialize();
+        
+        // Add payment intent ID if available
+        if (paymentIntentId) {
+            formData += '&paymentIntentId=' + encodeURIComponent(paymentIntentId);
+        }
         
         // Get Google Sheets URL
         const url_gsheet = $('#partnershipForm').attr('action');
@@ -692,8 +988,7 @@ $(document).ready(function() {
         // Add timestamp
         const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
         const date = new Date().toLocaleDateString('en-US');
-        formData.time = time;
-        formData.date = date;
+        formData += '&time=' + encodeURIComponent(time) + '&date=' + encodeURIComponent(date);
         
         // Submit to Google Sheets
         $.ajax({
@@ -820,9 +1115,37 @@ $(document).ready(function() {
         window.location = window.location.href;
     });
 
+    // Card field formatting removed - using Stripe Elements instead
+
     // Initialize
     updateStepper();
     calculateTotalAmount(); // Initialize total amount
+    
+    // Initialize Stripe and Stripe Elements as early as possible
+    function initStripeAndElements() {
+        initializeStripe()
+            .then(function() {
+                // Create the card element immediately so it's ready when user reaches Step 4
+                initializeStripeElements();
+            })
+            .catch(function(error) {
+                console.error('Stripe initialization error:', error);
+            });
+    }
+
+    if (typeof Stripe !== 'undefined') {
+        // Stripe.js already loaded
+        initStripeAndElements();
+    } else {
+        // Wait a bit for Stripe.js to load, then initialize
+        setTimeout(function() {
+            if (typeof Stripe !== 'undefined') {
+                initStripeAndElements();
+            } else {
+                console.error('Stripe.js library not loaded. Please check if the script is included in the HTML.');
+            }
+        }, 500);
+    }
 });
 
 $(document).on('input', '.number', function (e) {

@@ -1,3 +1,7 @@
+<?php
+// Include Stripe configuration to get publishable key
+require_once 'stripe-config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +34,11 @@
                     <div class="stepper-step" data-step="3">
                         <div class="stepper-step-number">3</div>
                         <div class="stepper-step-label">Attendee Information</div>
+                    </div>
+                    <div class="stepper-line"></div>
+                    <div class="stepper-step" data-step="4">
+                        <div class="stepper-step-number">4</div>
+                        <div class="stepper-step-label">Payment</div>
                     </div>
                 </div>
             </div>
@@ -83,7 +92,7 @@
                                     </div>
                                     <div class="tier-details">
                                         <p class="tier-contribution">One-time contribution of <strong>$300 or more</strong></p>
-                                        <p class="tier-note">(Travel, lodging, and meals not included)</p>
+                                        <p class="tier-note">Attendance for named individual only</p>
                                     </div>
                                 </div>
                             </label>
@@ -112,8 +121,8 @@
                             <li>Unveiling access is included for Tier 1 (up to 3 attendees) and Tier 2 (up to 2 attendees).</li>
                             <li>Unveiling Supporter access is limited to the named attendee.</li>
                             <li>Eligibility for permanent placement consideration is limited to Tier 1 and Tier 2</li>
-                            <li>Participation does not guarantee a physical exhibition at the participant’s location.</li>
-                            <li>Final exhibition locations are determined by the artwork’s owner and curatorial team.</li>
+                            <li>Participation does not guarantee a physical exhibition at the participant's location.</li>
+                            <li>Final exhibition locations are determined by the artwork's owner and curatorial team.</li>
                             <li>Travel, lodging, and meals not included.</li>
                         </ul>
                     </div>
@@ -253,7 +262,65 @@
                     
                     <div class="step-actions">
                         <button type="button" class="step-prev-btn" id="prevStep3">Previous</button>
-                        <button type="button" class="submit-button btn-submit">Submit</button>
+                        <button type="button" class="submit-button btn-submit" id="proceedToPayment">Proceed to Payment</button>
+                    </div>
+                </div>
+                
+                <!-- Step 4: Payment -->
+                <div class="form-step" id="step4" data-step="4" style="display: none;">
+                    <div class="payment-section">
+                        <h2 class="payment-title">Payment Information</h2>
+                        
+                        <!-- Invoice Summary -->
+                        <div class="invoice-summary-section">
+                            <h3 class="invoice-summary-title">Invoice Summary</h3>
+                            <div class="invoice-summary-content">
+                                <div class="invoice-row">
+                                    <span class="invoice-label">Base Contribution:</span>
+                                    <span class="invoice-value" id="invoiceBaseContribution">$0.00</span>
+                                </div>
+                                <div class="invoice-row" id="invoiceAdditionalAttendeesRow" style="display: none;">
+                                    <span class="invoice-label">Additional Attendees:</span>
+                                    <span class="invoice-value" id="invoiceAdditionalAttendeesCost">$0.00</span>
+                                </div>
+                                <div class="invoice-row invoice-total">
+                                    <span class="invoice-label">Total Amount:</span>
+                                    <span class="invoice-value" id="invoiceTotalAmount">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Form -->
+                        <div class="payment-form-section">
+                            <h3 class="payment-form-title">Card Details</h3>
+                            
+                            <!-- Stripe Error Display -->
+                            <div id="stripeErrorBox" class="stripe-error-box" style="display: none;">
+                                <div class="stripe-error-content">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M10 6V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M10 14H10.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <span id="stripeErrorText"></span>
+                                </div>
+                            </div>
+                            
+                            <div id="paymentForm">
+                                <div class="form-field">
+                                    <label class="field-label">Card Details <span class="required-asterisk">*</span></label>
+                                    <div id="card-element" class="stripe-card-element">
+                                        <!-- Stripe Elements will create form elements here -->
+                                    </div>
+                                    <div id="card-errors" class="stripe-field-error" role="alert"></div>
+                                </div>
+                                
+                                <div class="step-actions">
+                                    <button type="button" class="step-prev-btn" id="prevStep4">Previous</button>
+                                    <button type="button" class="submit-button btn-submit" id="submitPayment">Pay Now</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -286,7 +353,11 @@
     </div>
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        // Initialize Stripe with publishable key from PHP
+        var STRIPE_PUBLISHABLE_KEY = '<?php echo isset($stripe_publishable_key) ? addslashes($stripe_publishable_key) : ""; ?>';
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
-
