@@ -351,6 +351,18 @@ $(document).ready(function() {
         }
     });
 
+    // Clear additional-attendee acknowledgment errors when user interacts
+    $('#attendanceEligibilityAck, #attendanceEligibilityInitials').on('change input', function() {
+        if ($('#attendanceEligibilityAck').is(':checked') && $('#attendanceEligibilityInitials').val().trim()) {
+            $('#attendanceEligibilityError').text('').hide();
+        }
+    });
+    $('#stewardshipEligibilityAck, #stewardshipEligibilityInitials').on('change input', function() {
+        if ($('#stewardshipEligibilityAck').is(':checked') && $('#stewardshipEligibilityInitials').val().trim()) {
+            $('#stewardshipEligibilityError').text('').hide();
+        }
+    });
+
     // Get max attendees based on tier
     function getMaxAttendees() {
         const selectedTier = $('input[name="tier"]:checked').val();
@@ -404,6 +416,11 @@ $(document).ready(function() {
                     <input type="text" class="attendee-input required" name="attendeeTitle" placeholder="Enter title/position">
                     <span class="error-message" id="attendee${attendeeNumber}TitleError"></span>
                 </div>
+                <div class="attendee-input-group">
+                    <label class="attendee-input-label">Email</label>
+                    <input type="email" class="attendee-input required" name="attendeeEmail" placeholder="Enter attendee email">
+                    <span class="error-message" id="attendee${attendeeNumber}EmailError"></span>
+                </div>
                 ${(attendeeNumber > 1 || isAdditional) ? `
                 <div class="attendee-actions">
                     <button type="button" class="attendee-delete-btn" data-attendee="${attendeeNumber}">
@@ -453,8 +470,35 @@ $(document).ready(function() {
         }
     }
 
+    // Validate additional-attendee acknowledgments (both checkboxes + initials)
+    function validateAdditionalAttendeeAcknowledgments() {
+        $('#attendanceEligibilityError, #stewardshipEligibilityError').text('').hide();
+        const attendanceChecked = $('#attendanceEligibilityAck').is(':checked');
+        const attendanceInitials = ($('#attendanceEligibilityInitials').val() || '').trim();
+        const stewardshipChecked = $('#stewardshipEligibilityAck').is(':checked');
+        const stewardshipInitials = ($('#stewardshipEligibilityInitials').val() || '').trim();
+        let valid = true;
+        if (!attendanceChecked || !attendanceInitials) {
+            $('#attendanceEligibilityError').text('Please check the box and provide your initials.').show();
+            valid = false;
+        }
+        if (!stewardshipChecked || !stewardshipInitials) {
+            $('#stewardshipEligibilityError').text('Please check the box and provide your initials.').show();
+            valid = false;
+        }
+        if (!valid) {
+            $('html, body').animate({
+                scrollTop: $('#attendeeStepAcknowledgments').offset().top - 100
+            }, 400);
+        }
+        return valid;
+    }
+
     // Add additional attendee
     function addAdditionalAttendee() {
+        if (!validateAdditionalAttendeeAcknowledgments()) {
+            return;
+        }
         const currentAdditionalCount = getCurrentAdditionalAttendeeCount();
         const maxAdditional = getMaxAdditionalAttendees();
         
@@ -505,13 +549,17 @@ $(document).ready(function() {
             // Update input names and IDs
             const nameInput = $(this).find('input[name^="attendee"][name$="Name"]');
             const titleInput = $(this).find('input[name^="attendee"][name$="Title"]');
+            const emailInput = $(this).find('input[name^="attendee"][name$="Email"]');
             const nameError = $(this).find('span[id^="attendee"][id$="NameError"]');
             const titleError = $(this).find('span[id^="attendee"][id$="TitleError"]');
+            const emailError = $(this).find('span[id^="attendee"][id$="EmailError"]');
             
             nameInput.attr('name', `attendee${newNumber}Name`).attr('id', `attendee${newNumber}Name`);
             titleInput.attr('name', `attendee${newNumber}Title`).attr('id', `attendee${newNumber}Title`);
+            emailInput.attr('name', `attendee${newNumber}Email`).attr('id', `attendee${newNumber}Email`);
             nameError.attr('id', `attendee${newNumber}NameError`);
             titleError.attr('id', `attendee${newNumber}TitleError`);
+            emailError.attr('id', `attendee${newNumber}EmailError`);
             
             // Handle delete button
             const deleteBtnContainer = $(this).find('.attendee-actions');
@@ -681,13 +729,17 @@ $(document).ready(function() {
             // Update input names and IDs
             const nameInput = $(this).find('input[name^="attendee"][name$="Name"]');
             const titleInput = $(this).find('input[name^="attendee"][name$="Title"]');
+            const emailInput = $(this).find('input[name^="attendee"][name$="Email"]');
             const nameError = $(this).find('span[id^="attendee"][id$="NameError"]');
             const titleError = $(this).find('span[id^="attendee"][id$="TitleError"]');
+            const emailError = $(this).find('span[id^="attendee"][id$="EmailError"]');
             
             nameInput.attr('name', `attendee${newAttendeeNumber}Name`).attr('id', `attendee${newAttendeeNumber}Name`);
             titleInput.attr('name', `attendee${newAttendeeNumber}Title`).attr('id', `attendee${newAttendeeNumber}Title`);
+            emailInput.attr('name', `attendee${newAttendeeNumber}Email`).attr('id', `attendee${newAttendeeNumber}Email`);
             nameError.attr('id', `attendee${newAttendeeNumber}NameError`);
             titleError.attr('id', `attendee${newAttendeeNumber}TitleError`);
+            emailError.attr('id', `attendee${newAttendeeNumber}EmailError`);
             
             // Update delete button
             $(this).find('.attendee-delete-btn').attr('data-attendee', newAttendeeNumber);
@@ -716,93 +768,64 @@ $(document).ready(function() {
     $('#proceedToPayment').on('click', function(e) {
         e.preventDefault();
         
-        // Validate attendee fields - require at least 1 complete attendee
+        // Validate attendee fields – all visible fields are required
         let isValid = true;
         let firstErrorField = null;
-        let hasAtLeastOneComplete = false;
         
         // First, clear all errors
         $('.attendee-input.required').removeClass('error');
-        $('.attendee-input.required').each(function() {
-            const fieldName = $(this).attr('name');
-            $(`#${fieldName}Error`).hide();
+        $('.attendee-row').each(function() {
+            $(this).find('span[id*="NameError"], span[id*="TitleError"], span[id*="EmailError"]').hide();
         });
         
-        // Validate each attendee row
+        // Validate each visible attendee row – Name, Title, and Email required
         $('.attendee-row').each(function() {
             const attendeeNumber = $(this).data('attendee') || ($(this).index() + 1);
             
-            // Try both naming conventions
             let nameInput = $(this).find(`input[name="attendee${attendeeNumber}Name"]`);
             let titleInput = $(this).find(`input[name="attendee${attendeeNumber}Title"]`);
+            let emailInput = $(this).find(`input[name="attendee${attendeeNumber}Email"]`);
             
-            // Fallback to generic names if not found
-            if (nameInput.length === 0) {
-                nameInput = $(this).find('input[name="attendeeName"]').first();
-            }
-            if (titleInput.length === 0) {
-                titleInput = $(this).find('input[name="attendeeTitle"]').first();
-            }
+            if (nameInput.length === 0) nameInput = $(this).find('input[name="attendeeName"]').first();
+            if (titleInput.length === 0) titleInput = $(this).find('input[name="attendeeTitle"]').first();
+            if (emailInput.length === 0) emailInput = $(this).find('input[name="attendeeEmail"]').first();
             
             const nameValue = nameInput.length > 0 ? nameInput.val().trim() : '';
             const titleValue = titleInput.length > 0 ? titleInput.val().trim() : '';
+            const emailValue = emailInput.length > 0 ? emailInput.val().trim() : '';
             
-            // Check if this attendee is complete
-            if (nameValue && titleValue) {
-                hasAtLeastOneComplete = true;
+            if (!nameValue) {
+                nameInput.addClass('error');
+                const nameErrorEl = nameInput.closest('.attendee-row').find('span[id*="NameError"]');
+                if (nameErrorEl.length) nameErrorEl.text('This field is required.').show();
+                if (!firstErrorField) firstErrorField = nameInput;
+                isValid = false;
             }
-            
-            // If either field has a value, both are required
-            if (nameValue || titleValue) {
-                if (!nameValue) {
-                    nameInput.addClass('error');
-                    const nameErrorId = nameInput.closest('.attendee-row').find('span[id*="NameError"]').attr('id');
-                    if (nameErrorId) {
-                        $(`#${nameErrorId}`).text('Name is required.').show();
-                    }
-                    if (!firstErrorField) {
-                        firstErrorField = nameInput;
-                    }
-                    isValid = false;
-                }
-                if (!titleValue) {
-                    titleInput.addClass('error');
-                    const titleErrorId = titleInput.closest('.attendee-row').find('span[id*="TitleError"]').attr('id');
-                    if (titleErrorId) {
-                        $(`#${titleErrorId}`).text('Title/Position is required.').show();
-                    }
-                    if (!firstErrorField) {
-                        firstErrorField = titleInput;
-                    }
-                    isValid = false;
-                }
+            if (!titleValue) {
+                titleInput.addClass('error');
+                const titleErrorEl = titleInput.closest('.attendee-row').find('span[id*="TitleError"]');
+                if (titleErrorEl.length) titleErrorEl.text('This field is required.').show();
+                if (!firstErrorField) firstErrorField = titleInput;
+                isValid = false;
+            }
+            if (!emailValue) {
+                emailInput.addClass('error');
+                const emailErrorEl = emailInput.closest('.attendee-row').find('span[id*="EmailError"]');
+                if (emailErrorEl.length) emailErrorEl.text('This field is required.').show();
+                if (!firstErrorField) firstErrorField = emailInput;
+                isValid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                emailInput.addClass('error');
+                const emailErrorEl = emailInput.closest('.attendee-row').find('span[id*="EmailError"]');
+                if (emailErrorEl.length) emailErrorEl.text('Please enter a valid email address.').show();
+                if (!firstErrorField) firstErrorField = emailInput;
+                isValid = false;
             }
         });
         
-        // Check if at least one complete attendee exists
-        if (!hasAtLeastOneComplete) {
+        // Require eligibility acknowledgments (checkbox + initials) for all users
+        if (!validateAdditionalAttendeeAcknowledgments()) {
             isValid = false;
-            const firstRow = $('.attendee-row').first();
-            let firstAttendeeName = firstRow.find('input[name="attendee1Name"]');
-            let firstAttendeeTitle = firstRow.find('input[name="attendee1Title"]');
-            
-            // Fallback to generic names
-            if (firstAttendeeName.length === 0) {
-                firstAttendeeName = firstRow.find('input[name="attendeeName"]').first();
-            }
-            if (firstAttendeeTitle.length === 0) {
-                firstAttendeeTitle = firstRow.find('input[name="attendeeTitle"]').first();
-            }
-            
-            if (firstAttendeeName.length > 0) firstAttendeeName.addClass('error');
-            if (firstAttendeeTitle.length > 0) firstAttendeeTitle.addClass('error');
-            
-            const firstErrorId = firstAttendeeName.attr('id') || 'attendee1NameError';
-            $(`#${firstErrorId}`).text('At least one attendee is required.').show();
-            
-            if (!firstErrorField && firstAttendeeName.length > 0) {
-                firstErrorField = firstAttendeeName;
-            }
         }
         
         if (!isValid) {
@@ -1070,26 +1093,24 @@ $(document).ready(function() {
             const attendeeNumber = $(this).data('attendee') || (index + 1);
             const isAdditional = $(this).hasClass('additional-attendee');
             
-            // Try both naming conventions
             let nameInput = $(this).find('input[name="attendee' + attendeeNumber + 'Name"]');
             let titleInput = $(this).find('input[name="attendee' + attendeeNumber + 'Title"]');
+            let emailInput = $(this).find('input[name="attendee' + attendeeNumber + 'Email"]');
             
-            // Fallback to generic names if not found
-            if (nameInput.length === 0) {
-                nameInput = $(this).find('input[name="attendeeName"]').first();
-            }
-            if (titleInput.length === 0) {
-                titleInput = $(this).find('input[name="attendeeTitle"]').first();
-            }
+            if (nameInput.length === 0) nameInput = $(this).find('input[name="attendeeName"]').first();
+            if (titleInput.length === 0) titleInput = $(this).find('input[name="attendeeTitle"]').first();
+            if (emailInput.length === 0) emailInput = $(this).find('input[name="attendeeEmail"]').first();
             
             const name = nameInput.val() ? nameInput.val().trim() : '';
             const title = titleInput.val() ? titleInput.val().trim() : '';
+            const email = emailInput.val() ? emailInput.val().trim() : '';
             
-            if (name || title) {
+            if (name || title || email) {
                 attendees.push({
                     number: attendeeNumber,
                     name: name,
                     title: title,
+                    email: email,
                     isAdditional: isAdditional
                 });
             }

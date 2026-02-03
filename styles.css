@@ -645,7 +645,7 @@ body {
 
 .attendee-header {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 16px;
     padding-bottom: 12px;
     border-bottom: 2px solid var(--border-gray);
@@ -668,7 +668,7 @@ body {
 
 .attendee-row {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr 1fr auto;
     gap: 16px;
     align-items: start;
 }
@@ -1418,6 +1418,104 @@ body {
     margin: 0;
 }
 
+/* Step 3 Eligibility Acknowledgments (outside additional attendee card – always visible) */
+.attendee-step-acknowledgments {
+    margin-top: 28px;
+    margin-bottom: 28px;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+}
+
+.attendee-acknowledgment-block {
+    margin-bottom: 24px;
+    padding: 16px 0;
+}
+
+.attendee-acknowledgment-block:last-of-type {
+    margin-bottom: 0;
+}
+
+.attendee-acknowledgment-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin: 0 0 10px 0;
+    letter-spacing: -0.2px;
+}
+
+.attendee-acknowledgment-text {
+    font-size: 14px;
+    color: var(--text-gray);
+    line-height: 1.6;
+    margin: 0 0 14px 0;
+}
+
+.attendee-acknowledgment-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.attendee-acknowledgment-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.attendee-ack-full-label {
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.attendee-ack-full-label .attendee-ack-checkbox {
+    margin-top: 3px;
+}
+
+.attendee-ack-full-label .attendee-ack-checkbox-text {
+    line-height: 1.5;
+}
+
+.attendee-ack-checkbox {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-black);
+}
+
+.attendee-ack-checkbox-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-black);
+}
+
+.attendee-initials-field {
+    flex: 0 0 auto;
+}
+
+.attendee-initials-field .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.attendee-initials-input {
+    width: 80px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.attendee-acknowledgment-block .error-message {
+    display: block;
+    margin-top: 8px;
+}
+
 .additional-badge {
     display: inline-block;
     margin-left: 8px;
@@ -1492,6 +1590,25 @@ body {
     
     .additional-attendee-description {
         font-size: 13px;
+    }
+    
+    .attendee-acknowledgment-fields {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .attendee-acknowledgment-title {
+        font-size: 14px;
+    }
+    
+    .attendee-acknowledgment-text {
+        font-size: 13px;
+    }
+    
+    .attendee-step-acknowledgments {
+        padding: 20px;
+        margin-top: 24px;
+        margin-bottom: 24px;
     }
     
     .cost-summary {

@@ -219,6 +219,7 @@ require_once 'stripe-config.php';
                         <div class="attendee-header">
                             <div class="attendee-header-col">Names of Attendees</div>
                             <div class="attendee-header-col">Title/Position within Organization</div>
+                            <div class="attendee-header-col">Email</div>
                         </div>
                         
                         <div class="attendee-fields" id="attendeeFields">
@@ -232,6 +233,38 @@ require_once 'stripe-config.php';
                                 </svg>
                                 Add Another Attendee
                             </button>
+                        </div>
+                        
+                        <!-- Eligibility Acknowledgments (required for all – always visible on Step 3) -->
+                        <div class="attendee-step-acknowledgments" id="attendeeStepAcknowledgments">
+                            <div class="attendee-acknowledgment-block">
+                                <h4 class="attendee-acknowledgment-title">Attendance Eligibility Acknowledgment</h4>
+                                <div class="attendee-acknowledgment-fields">
+                                    <label class="attendee-acknowledgment-label attendee-ack-full-label">
+                                        <input type="checkbox" name="attendance_eligibility_ack" id="attendanceEligibilityAck" class="attendee-ack-checkbox" value="1">
+                                        <span class="attendee-ack-checkbox-text">I understand and acknowledge that this unveiling of Ultimate Creation is a private, invitation-only professional engagement and is not open to the general public at this time. I confirm that all additional attendees listed by our organization are employed by, or formally affiliated with, our institution.</span>
+                                    </label>
+                                    <div class="attendee-initials-field">
+                                        <label for="attendanceEligibilityInitials" class="field-label">Initials</label>
+                                        <input type="text" id="attendanceEligibilityInitials" name="attendance_eligibility_initials" class="form-input attendee-initials-input" placeholder="e.g. JD" maxlength="10">
+                                    </div>
+                                </div>
+                                <span class="error-message" id="attendanceEligibilityError"></span>
+                            </div>
+                            <div class="attendee-acknowledgment-block">
+                                <h4 class="attendee-acknowledgment-title">Stewardship Eligibility Acknowledgment</h4>
+                                <div class="attendee-acknowledgment-fields">
+                                    <label class="attendee-acknowledgment-label attendee-ack-full-label">
+                                        <input type="checkbox" name="stewardship_eligibility_ack" id="stewardshipEligibilityAck" class="attendee-ack-checkbox" value="1">
+                                        <span class="attendee-ack-checkbox-text">I understand and acknowledge that participation in this unveiling is granted in good faith based on the above confirmation. If it is determined that this understanding has been materially violated, our organization may be deemed ineligible for future stewardship consideration related to the long-term placement of Ultimate Creation.</span>
+                                    </label>
+                                    <div class="attendee-initials-field">
+                                        <label for="stewardshipEligibilityInitials" class="field-label">Initials</label>
+                                        <input type="text" id="stewardshipEligibilityInitials" name="stewardship_eligibility_initials" class="form-input attendee-initials-input" placeholder="e.g. JD" maxlength="10">
+                                    </div>
+                                </div>
+                                <span class="error-message" id="stewardshipEligibilityError"></span>
+                            </div>
                         </div>
                         
                         <!-- Additional Attendees Section -->
