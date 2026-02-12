@@ -203,8 +203,10 @@ $(document).ready(function() {
             }
         }
         
-        if (!acknowledgmentChecked) {
-            $('#acknowledgmentError').text('Please acknowledge the above distinctions.').show();
+        // Validate acknowledgment checkbox and initials
+        const acknowledgmentInitials = ($('#acknowledgmentInitials').val() || '').trim();
+        if (!acknowledgmentChecked || !acknowledgmentInitials) {
+            $('#acknowledgmentError').text('Please check the box and provide your initials.').show();
             if (!firstErrorElement) {
                 firstErrorElement = $('.acknowledgment-section');
             }
@@ -243,7 +245,7 @@ $(document).ready(function() {
         // Basic validation for contact fields
         let isValid = true;
         let firstErrorField = null;
-        const requiredFields = ['institutionName', 'contactName', 'email', 'phone', 'street', 'city', 'state', 'zipCode'];
+        const requiredFields = ['institutionName', 'contactName', 'titlePosition', 'email', 'phone', 'street', 'city', 'state', 'zipCode'];
         
         requiredFields.forEach(function(fieldId) {
             const field = $(`#${fieldId}`);
@@ -345,8 +347,9 @@ $(document).ready(function() {
         calculateTotalAmount();
     });
 
-    $('.acknowledgment-checkbox').on('change', function() {
-        if ($(this).is(':checked')) {
+    // Clear acknowledgment error when both checkbox and initials are provided
+    $('.acknowledgment-checkbox, #acknowledgmentInitials').on('change input', function() {
+        if ($('.acknowledgment-checkbox').is(':checked') && $('#acknowledgmentInitials').val().trim()) {
             $('#acknowledgmentError').text('').hide();
         }
     });
@@ -1078,6 +1081,7 @@ $(document).ready(function() {
         // Contact information
         data.institutionName = $('#institutionName').val() || '';
         data.contactName = $('#contactName').val() || '';
+        data.titlePosition = $('#titlePosition').val() || '';
         data.email = $('#email').val() || '';
         data.phone = $('#phone').val() || '';
         

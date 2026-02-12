@@ -404,6 +404,31 @@ body {
     margin-left: 32px;
 }
 
+/* Acknowledgment fields layout (checkbox + initials) */
+.acknowledgment-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.acknowledgment-full-label {
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.acknowledgment-full-label .acknowledgment-checkbox {
+    margin-top: 3px;
+}
+
+@media (max-width: 768px) {
+    .acknowledgment-fields {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
 .tier-error-message {
     color: #dc2626;
     font-size: 14px;

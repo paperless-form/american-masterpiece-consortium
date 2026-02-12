@@ -118,7 +118,7 @@ require_once 'stripe-config.php';
                     <div class="clarifications-section">
                         <h2 class="clarifications-title">Important Clarifications</h2>
                         <ul class="clarifications-list">
-                            <li>Unveiling access is included for Tier 1 (up to 3 attendees) and Tier 2 (up to 2 attendees).</li>
+                            <li>Unveiling access is included for all tiers. Attendance limits: Tier 1—up to six; Tier 2—up to four; Tier 3—one designated attendee.</li>
                             <li>Unveiling Supporter access is limited to the named attendee.</li>
                             <li>Eligibility for permanent placement consideration is limited to Tier 1 and Tier 2</li>
                             <li>Participation does not guarantee a physical exhibition at the participant's location.</li>
@@ -128,10 +128,16 @@ require_once 'stripe-config.php';
                     </div>
                     
                     <div class="acknowledgment-section">
-                        <label class="acknowledgment-label">
-                            <input type="checkbox" name="acknowledgment" class="acknowledgment-checkbox">
-                            <span class="acknowledgment-text">I acknowledge and understand the above distinctions.</span>
-                        </label>
+                        <div class="acknowledgment-fields">
+                            <label class="acknowledgment-label acknowledgment-full-label">
+                                <input type="checkbox" name="acknowledgment" class="acknowledgment-checkbox">
+                                <span class="acknowledgment-text">I acknowledge and understand the above distinctions.</span>
+                            </label>
+                            <div class="attendee-initials-field">
+                                <label for="acknowledgmentInitials" class="field-label">Initials</label>
+                                <input type="text" id="acknowledgmentInitials" name="acknowledgment_initials" class="form-input attendee-initials-input" placeholder="e.g. JD" maxlength="10">
+                            </div>
+                        </div>
                         <span class="error-message" id="acknowledgmentError"></span>
                     </div>
                     
@@ -153,6 +159,12 @@ require_once 'stripe-config.php';
                             <label for="contactName" class="field-label">Primary Contact Name & Title</label>
                             <input type="text" id="contactName" name="contactName" class="form-input required">
                             <span class="error-message" id="contactNameError"></span>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="titlePosition" class="field-label">Title / Position</label>
+                            <input type="text" id="titlePosition" name="titlePosition" class="form-input required">
+                            <span class="error-message" id="titlePositionError"></span>
                         </div>
                         
                         <div class="form-field">
@@ -218,8 +230,8 @@ require_once 'stripe-config.php';
                         
                         <div class="attendee-header">
                             <div class="attendee-header-col">Names of Attendees</div>
-                            <div class="attendee-header-col">Title/Position within Organization</div>
-                            <div class="attendee-header-col">Email</div>
+                            <!-- <div class="attendee-header-col">Title/Position within Organization</div>
+                            <div class="attendee-header-col">Email</div> -->
                         </div>
                         
                         <div class="attendee-fields" id="attendeeFields">
