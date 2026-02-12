@@ -396,7 +396,16 @@ require_once 'stripe-config.php';
             <button type="button" class="success-close-btn" id="closeSuccessModal">Close</button>
         </div>
     </div>
-    
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="error-modal" style="display: none;">
+        <div class="error-modal-overlay"></div>
+        <div class="error-modal-content">
+            <h2 class="error-title">Error</h2>
+            <p class="error-message" id="errorMessage"></p>
+        </div>
+        <button type="button" class="error-close-btn" id="closeErrorModal">Close</button>
+    </div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -404,5 +413,6 @@ require_once 'stripe-config.php';
         var STRIPE_PUBLISHABLE_KEY = '<?php echo isset($stripe_publishable_key) ? addslashes($stripe_publishable_key) : ""; ?>';
     </script>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

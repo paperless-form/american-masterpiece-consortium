@@ -780,6 +780,12 @@ $(document).ready(function() {
         $('.attendee-row').each(function() {
             $(this).find('span[id*="NameError"], span[id*="TitleError"], span[id*="EmailError"]').hide();
         });
+
+        let acknowledgmentInitialsValue = $('#acknowledgmentInitials').val().trim();
+        let attendanceEligibilityInitialsValue = $('#attendanceEligibilityInitials').val().trim();
+        let stewardshipEligibilityInitialsValue = $('#stewardshipEligibilityInitials').val().trim();
+
+        console.log(acknowledgmentInitialsValue, attendanceEligibilityInitialsValue, stewardshipEligibilityInitialsValue);
         
         // Validate each visible attendee row – Name, Title, and Email required
         $('.attendee-row').each(function() {
@@ -846,6 +852,19 @@ $(document).ready(function() {
                     scrollTop: $('.stepper-container').offset().top - 20
                 }, 600);
             }
+            return;
+        }
+
+        console.log(acknowledgmentInitialsValue, attendanceEligibilityInitialsValue, stewardshipEligibilityInitialsValue);
+
+        if(acknowledgmentInitialsValue !== attendanceEligibilityInitialsValue || acknowledgmentInitialsValue !== stewardshipEligibilityInitialsValue || attendanceEligibilityInitialsValue !== stewardshipEligibilityInitialsValue) {
+            // pop up a modal to show the error
+            Swal.fire({
+                title: 'Error',
+                text: 'Please enter the same initials for all acknowledgments.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
             return;
         }
         
@@ -1045,9 +1064,9 @@ $(document).ready(function() {
                     $('#successModal').addClass('show').css('display', 'flex').hide().fadeIn(300);
                     
                     // Auto reload after 3 seconds
-                    setTimeout(function() {
-                        window.location = window.location.href;
-                    }, 3000);
+                    // setTimeout(function() {
+                    //     window.location = window.location.href;
+                    // }, 3000);
                 } else {
                     // Show error
                     $submitBtn.removeAttr('disabled').text(originalText);
